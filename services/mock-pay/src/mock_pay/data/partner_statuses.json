@@ -1,0 +1,20 @@
+[
+  {
+    "provider": "bank_alpha",
+    "status": "operational",
+    "since": null,
+    "message": null
+  },
+  {
+    "provider": "bank_beta",
+    "status": "operational",
+    "since": null,
+    "message": null
+  },
+  {
+    "provider": "bank_gamma",
+    "status": "outage",
+    "since": "2026-03-11T06:30:00Z",
+    "message": "Payment status API returning errors; submissions degraded"
+  }
+]

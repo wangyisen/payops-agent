@@ -1,0 +1,839 @@
+[
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260210-000001",
+    "status": "paid",
+    "amount": "10531.60",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-10T17:40:40.534260Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260211-000001",
+    "status": "paid",
+    "amount": "14290.91",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-11T19:46:57.051109Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260211-000002",
+    "status": "paid",
+    "amount": "17289.44",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-11T06:18:15.405471Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260212-000001",
+    "status": "rejected",
+    "amount": "12448.72",
+    "currency": "GBP",
+    "partner_message": "AC01 Incorrect account number",
+    "updated_at": "2026-02-12T12:30:11.902872Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260212-000002",
+    "status": "paid",
+    "amount": "6117.86",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-12T13:17:55.360812Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260213-000001",
+    "status": "paid",
+    "amount": "16125.54",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-13T01:54:47.567965Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260214-000001",
+    "status": "paid",
+    "amount": "11457.05",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-14T19:57:02.961261Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260214-000002",
+    "status": "paid",
+    "amount": "13082.07",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-14T14:48:26.267784Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260214-000003",
+    "status": "paid",
+    "amount": "6682.90",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-14T23:44:56.231045Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260215-000001",
+    "status": "paid",
+    "amount": "10884.91",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-15T23:25:34.875651Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260215-000002",
+    "status": "paid",
+    "amount": "21979.87",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-15T08:42:44.129381Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260216-000001",
+    "status": "paid",
+    "amount": "6190.26",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-16T05:41:55.262165Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260219-000001",
+    "status": "paid",
+    "amount": "18675.62",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-19T15:29:01.814325Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260219-000002",
+    "status": "paid",
+    "amount": "18833.45",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-19T13:19:32.050210Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260219-000003",
+    "status": "paid",
+    "amount": "21825.05",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-19T19:59:41.248651Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260220-000001",
+    "status": "paid",
+    "amount": "17951.26",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-20T07:14:31.251811Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260220-000002",
+    "status": "paid",
+    "amount": "16776.24",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-20T04:15:54.299880Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260221-000001",
+    "status": "paid",
+    "amount": "9778.06",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-21T11:47:28.242971Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260221-000002",
+    "status": "paid",
+    "amount": "14612.69",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-21T09:44:54.269899Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260222-000001",
+    "status": "paid",
+    "amount": "18430.79",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-22T22:50:33.456970Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260223-000001",
+    "status": "paid",
+    "amount": "331.50",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-23T19:05:11.597482Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260223-000002",
+    "status": "paid",
+    "amount": "5004.46",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-23T04:56:44.213140Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260224-000001",
+    "status": "returned",
+    "amount": "10107.15",
+    "currency": "EUR",
+    "partner_message": "AC04 Account closed; funds returned",
+    "updated_at": "2026-02-27T21:06:51.477965Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260224-000002",
+    "status": "paid",
+    "amount": "10622.58",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-24T17:40:05.276129Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260225-000001",
+    "status": "paid",
+    "amount": "12600.19",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-25T12:32:09.601257Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260226-000001",
+    "status": "paid",
+    "amount": "17685.13",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-26T23:17:59.809693Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260226-000002",
+    "status": "paid",
+    "amount": "22185.73",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-26T09:35:43.159198Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260227-000001",
+    "status": "paid",
+    "amount": "13411.77",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-02-27T02:27:06.114710Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260228-000001",
+    "status": "paid",
+    "amount": "22629.80",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-02-28T09:41:06.516353Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260301-000001",
+    "status": "paid",
+    "amount": "19937.57",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-01T16:54:35.996414Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260302-000001",
+    "status": "paid",
+    "amount": "11263.28",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-03-02T18:19:29.024139Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260302-000002",
+    "status": "paid",
+    "amount": "5763.48",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-03-02T20:38:36.097119Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260302-000003",
+    "status": "paid",
+    "amount": "7438.83",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-02T19:19:19.688814Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260303-000001",
+    "status": "paid",
+    "amount": "2794.22",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-04T06:00:53.296227Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260304-000001",
+    "status": "paid",
+    "amount": "17396.91",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-05T03:53:30.072424Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260304-000002",
+    "status": "paid",
+    "amount": "4505.56",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-05T01:30:42.423874Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260304-000003",
+    "status": "paid",
+    "amount": "17609.37",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-03-04T04:40:23.070664Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260304-000004",
+    "status": "paid",
+    "amount": "1528.92",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-05T04:32:46.044614Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260304-000005",
+    "status": "paid",
+    "amount": "2810.02",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-04T20:47:45.467058Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260304-000006",
+    "status": "paid",
+    "amount": "4086.34",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-05T11:02:03.591154Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260305-000001",
+    "status": "paid",
+    "amount": "4035.77",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-05T08:46:42.032848Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260305-000002",
+    "status": "paid",
+    "amount": "2347.64",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-03-05T18:59:17.435520Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260305-000003",
+    "status": "paid",
+    "amount": "18321.50",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-06T02:26:46.046983Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260305-000004",
+    "status": "paid",
+    "amount": "21673.88",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-05T20:04:07.845623Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260306-000001",
+    "status": "returned",
+    "amount": "3036.05",
+    "currency": "GBP",
+    "partner_message": "AC04 Account closed; funds returned",
+    "updated_at": "2026-03-10T09:30:00Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260306-000002",
+    "status": "paid",
+    "amount": "16129.39",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-07T01:45:52.961460Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260307-000001",
+    "status": "paid",
+    "amount": "12609.46",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-03-07T15:19:18.990376Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260310-000001",
+    "status": "paid",
+    "amount": "5548.85",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-10T09:09:00Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260310-000002",
+    "status": "accepted",
+    "amount": "14413.34",
+    "currency": "EUR",
+    "partner_message": "Payment held at the beneficiary bank pending its internal review",
+    "updated_at": "2026-03-10T03:30:02Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260310-000003",
+    "status": "paid",
+    "amount": "3858.91",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-11T01:53:59.216692Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260311-000002",
+    "status": "paid",
+    "amount": "2137.24",
+    "currency": "GBP",
+    "partner_message": null,
+    "updated_at": "2026-03-11T07:06:00Z"
+  },
+  {
+    "provider": "bank_alpha",
+    "provider_reference": "BA-20260311-000003",
+    "status": "paid",
+    "amount": "6642.60",
+    "currency": "EUR",
+    "partner_message": null,
+    "updated_at": "2026-03-11T06:25:00Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260209-000001",
+    "status": "paid",
+    "amount": "12655.16",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-10T19:22:04.510120Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260213-000001",
+    "status": "paid",
+    "amount": "6268.52",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-14T04:24:09.384500Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260216-000001",
+    "status": "paid",
+    "amount": "12052.03",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-17T00:30:56.823858Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260218-000001",
+    "status": "paid",
+    "amount": "24101.72",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-19T11:36:17.216191Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260220-000001",
+    "status": "paid",
+    "amount": "23180.60",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-20T21:31:22.086513Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260221-000001",
+    "status": "paid",
+    "amount": "2896.31",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-22T19:03:00.367834Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260226-000001",
+    "status": "paid",
+    "amount": "14392.72",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-26T22:08:36.694721Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260227-000001",
+    "status": "paid",
+    "amount": "8371.75",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-02-28T10:08:23.221911Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260228-000001",
+    "status": "paid",
+    "amount": "17081.85",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-01T15:58:20.622617Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260301-000001",
+    "status": "paid",
+    "amount": "24686.12",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-01T22:12:28.540509Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260305-000001",
+    "status": "rejected",
+    "amount": "7252.97",
+    "currency": "USD",
+    "partner_message": "R04 Invalid account number structure",
+    "updated_at": "2026-03-06T08:54:57.074072Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260306-000001",
+    "status": "paid",
+    "amount": "5789.01",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-06T21:47:55.475310Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260307-000001",
+    "status": "paid",
+    "amount": "21394.61",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-08T04:45:16.451953Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260309-000001",
+    "status": "paid",
+    "amount": "3137.40",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-10T10:05:00Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260309-000002",
+    "status": "paid",
+    "amount": "3137.40",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-10T10:06:30Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260309-000003",
+    "status": "rejected",
+    "amount": "15223.78",
+    "currency": "USD",
+    "partner_message": "R04 Invalid account number structure",
+    "updated_at": "2026-03-10T08:02:51.801213Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260310-000001",
+    "status": "rejected",
+    "amount": "2290.80",
+    "currency": "USD",
+    "partner_message": "R04 Invalid account number structure",
+    "updated_at": "2026-03-10T11:30:00Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260310-000002",
+    "status": "paid",
+    "amount": "1743.47",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-11T07:08:47.228647Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260310-000003",
+    "status": "accepted",
+    "amount": "7127.28",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-10T11:24:02Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260310-000004",
+    "status": "accepted",
+    "amount": "3705.58",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-10T18:13:02Z"
+  },
+  {
+    "provider": "bank_beta",
+    "provider_reference": "BB-20260311-000001",
+    "status": "accepted",
+    "amount": "2402.42",
+    "currency": "USD",
+    "partner_message": null,
+    "updated_at": "2026-03-11T07:18:02Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260213-000001",
+    "status": "paid",
+    "amount": "13641.30",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-13T09:22:57.437195Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260215-000001",
+    "status": "paid",
+    "amount": "40053.08",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-15T09:32:09.575927Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260215-000002",
+    "status": "paid",
+    "amount": "399574.69",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-15T04:38:46.915905Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260221-000001",
+    "status": "paid",
+    "amount": "47966.60",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-21T07:07:48.314823Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260223-000001",
+    "status": "paid",
+    "amount": "419452.09",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-23T16:27:27.179637Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260224-000001",
+    "status": "paid",
+    "amount": "319890.62",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-24T02:10:31.225585Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260224-000002",
+    "status": "paid",
+    "amount": "375916.49",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-24T16:27:52.586186Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260225-000001",
+    "status": "paid",
+    "amount": "289303.82",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-25T08:30:18.976888Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260226-000001",
+    "status": "paid",
+    "amount": "207342.32",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-02-26T02:50:40.554687Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260226-000002",
+    "status": "returned",
+    "amount": "59586.01",
+    "currency": "MXN",
+    "partner_message": "AC04 Account closed; funds returned",
+    "updated_at": "2026-03-01T01:01:14.957159Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260301-000001",
+    "status": "paid",
+    "amount": "209375.91",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-01T04:39:57.901767Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260301-000002",
+    "status": "paid",
+    "amount": "63687.32",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-01T14:51:45.319998Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260301-000003",
+    "status": "paid",
+    "amount": "178319.34",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-01T18:27:38.024286Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260303-000001",
+    "status": "paid",
+    "amount": "20691.72",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-03T20:51:40.185220Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260305-000001",
+    "status": "paid",
+    "amount": "65736.56",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-05T11:12:20.844605Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260306-000001",
+    "status": "paid",
+    "amount": "12382.82",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-06T08:45:31.291480Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260307-000001",
+    "status": "paid",
+    "amount": "152880.86",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-07T10:40:23.086059Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260310-000001",
+    "status": "paid",
+    "amount": "166538.80",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-10T13:55:00Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260310-000002",
+    "status": "paid",
+    "amount": "381622.46",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-10T22:48:34.599017Z"
+  },
+  {
+    "provider": "bank_gamma",
+    "provider_reference": "BG-20260311-000001",
+    "status": "paid",
+    "amount": "192889.03",
+    "currency": "MXN",
+    "partner_message": null,
+    "updated_at": "2026-03-11T07:29:00Z"
+  }
+]

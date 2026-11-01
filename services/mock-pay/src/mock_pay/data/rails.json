@@ -1,0 +1,30 @@
+[
+  {
+    "code": "sepa",
+    "name": "SEPA Credit Transfer",
+    "currency": "EUR",
+    "provider": "bank_alpha",
+    "sla_minutes": 1440
+  },
+  {
+    "code": "fps",
+    "name": "UK Faster Payments",
+    "currency": "GBP",
+    "provider": "bank_alpha",
+    "sla_minutes": 120
+  },
+  {
+    "code": "ach",
+    "name": "US ACH",
+    "currency": "USD",
+    "provider": "bank_beta",
+    "sla_minutes": 2880
+  },
+  {
+    "code": "spei",
+    "name": "Mexico SPEI",
+    "currency": "MXN",
+    "provider": "bank_gamma",
+    "sla_minutes": 60
+  }
+]
