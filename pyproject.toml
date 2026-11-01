@@ -1,0 +1,52 @@
+[project]
+name = "payops-agent-workspace"
+version = "0.1.0"
+description = "Workspace root for PayOps Agent; not a package itself."
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["services/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",   # pycodestyle, pyflakes
+    "I",             # isort
+    "B",             # bugbear
+    "UP",            # pyupgrade
+    "SIM",           # simplify
+    "RUF",           # ruff-specific
+    "ASYNC",         # async pitfalls
+    "S",             # bandit (security)
+    "PT",            # pytest style
+    "DTZ",           # naive datetimes
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+
+[tool.pytest.ini_options]
+testpaths = ["services"]
+addopts = ["-ra", "--strict-markers", "--import-mode=importlib", "-m", "not live"]
+asyncio_mode = "auto"
+markers = ["live: calls a real LLM API; needs LLM_API_KEY in .env (run with `make test-live`)"]
