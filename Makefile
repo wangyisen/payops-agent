@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 UV := uv run
 
-.PHONY: help setup lint fmt typecheck test check mock-pay seed
+.PHONY: help setup lint fmt typecheck test check secrets mock-pay seed
 
 help: ## Show available targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -23,7 +23,11 @@ typecheck: ## mypy --strict over all services
 test: ## Run the offline test suite
 	$(UV) pytest
 
-check: lint typecheck test ## Everything CI runs
+check: lint typecheck test ## Lint, type-check and test (CI also runs `secrets`)
+
+secrets: ## Scan the git history for secrets with the CI config (needs gitleaks installed)
+	@command -v gitleaks >/dev/null || { echo "gitleaks not installed (brew install gitleaks)"; exit 1; }
+	gitleaks git --config .gitleaks.toml --redact
 
 mock-pay: ## Run the mock payments API on http://127.0.0.1:8001 (docs at /docs)
 	$(UV) uvicorn mock_pay.app:create_app --factory --port 8001 --reload
