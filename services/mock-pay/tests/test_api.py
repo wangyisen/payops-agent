@@ -1,10 +1,14 @@
+import threading
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
 from mock_pay.app import create_app
+from mock_pay.settings import Settings
+from mock_pay.store import Store, load_seed_dataset
 
 NOW = datetime.fromisoformat("2026-03-11T09:30:00Z")
 
@@ -12,6 +16,18 @@ NOW = datetime.fromisoformat("2026-03-11T09:30:00Z")
 def error_code(response: Any) -> str:
     code: str = response.json()["error"]["code"]
     return code
+
+
+def walk(client: TestClient, params: dict[str, Any], cursor: str | None = None) -> list[str]:
+    """Follow next_cursor through every page; return the ids in order."""
+    seen: list[str] = []
+    while True:
+        query = {**params, "limit": 25} | ({"starting_after": cursor} if cursor else {})
+        page = client.get("/v1/transfers", params=query).json()
+        seen += [t["id"] for t in page["data"]]
+        cursor = page["next_cursor"]
+        if not page["has_more"]:
+            return seen
 
 
 class TestBasics:
@@ -26,6 +42,37 @@ class TestBasics:
 
         assert response.status_code == 401
         assert error_code(response) == "unauthorized"
+
+    def test_a_non_ascii_key_is_rejected_not_crashed(self) -> None:
+        raw = {"Authorization": "Bearer café".encode()}  # bytes on purpose: str must be ASCII
+        with TestClient(create_app(), headers=raw) as c:  # type: ignore[arg-type]
+            response = c.get("/v1/clock")
+
+        assert (response.status_code, error_code(response)) == (401, "unauthorized")
+
+    def test_unexpected_errors_keep_the_error_shape(
+        self, monkeypatch: pytest.MonkeyPatch, tid: dict[str, str]
+    ) -> None:
+        def explode(*_: Any) -> Any:
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(Store, "events_for", explode)
+        with TestClient(create_app(), raise_server_exceptions=False) as c:
+            response = c.get(
+                f"/v1/transfers/{tid['S09']}/webhook-events",
+                headers={"Authorization": "Bearer dev-mock-pay-key"},
+            )
+
+        assert (response.status_code, error_code(response)) == (500, "internal_error")
+        assert "boom" not in response.text  # internals are not leaked
+
+    def test_an_empty_key_variable_falls_back_to_the_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Copying .env.example leaves MOCK_PAY_API_KEY= empty; that must not lock everyone out.
+        monkeypatch.setenv("MOCK_PAY_API_KEY", "")
+
+        assert Settings().api_key.get_secret_value() == "dev-mock-pay-key"
 
     def test_clock_is_frozen(self, client: TestClient) -> None:
         assert client.get("/v1/clock").json() == {"now": "2026-03-11T09:30:00Z", "frozen": True}
@@ -42,22 +89,34 @@ class TestBasics:
 
 
 class TestTransfers:
-    def test_cursor_pagination_walks_every_transfer_once(self, client: TestClient) -> None:
-        seen: list[str] = []
-        cursor = None
-        while True:
-            params: dict[str, Any] = {"limit": 25}
-            if cursor:
-                params["starting_after"] = cursor
-            page = client.get("/v1/transfers", params=params).json()
-            seen += [t["id"] for t in page["data"]]
-            cursor = page["next_cursor"]
-            if not page["has_more"]:
-                break
-        created = [client.get(f"/v1/transfers/{tid}").json()["created_at"] for tid in seen[:5]]
+    def test_cursor_pagination_walks_every_transfer_once_in_order(self, client: TestClient) -> None:
+        transfers = load_seed_dataset().transfers
+        expected = [t.id for t in sorted(transfers, key=lambda t: (t.created_at, t.id))][::-1]
 
-        assert len(seen) == len(set(seen)) > 100
-        assert created == sorted(created, reverse=True)
+        assert walk(client, {}) == expected
+
+    def test_an_unknown_cursor_is_an_error_not_an_empty_page(self, client: TestClient) -> None:
+        response = client.get("/v1/transfers", params={"starting_after": "tr_doesnotexist"})
+
+        assert (response.status_code, error_code(response)) == (400, "invalid_cursor")
+
+    def test_a_cursor_keeps_working_after_its_transfer_changes(
+        self, client: TestClient, tid: dict[str, str]
+    ) -> None:
+        everything = walk(client, {"status": "failed"})
+        first_page = client.get("/v1/transfers", params={"status": "failed", "limit": 2}).json()
+        cursor = first_page["next_cursor"]
+        assert cursor == tid["S03"]
+        retry = client.post(
+            f"/v1/transfers/{tid['S03']}/retry",
+            json=ACTION,
+            headers={"Idempotency-Key": "retry-cursor-0001"},
+        )
+        assert retry.status_code == 200  # S03 no longer matches status=failed
+
+        rest = walk(client, {"status": "failed"}, cursor=cursor)
+
+        assert rest == everything[2:]
 
     def test_filters(self, client: TestClient, labels: dict[str, Any]) -> None:
         held = client.get("/v1/transfers", params={"status": "on_hold"}).json()["data"]
@@ -65,6 +124,7 @@ class TestTransfers:
             "/v1/transfers", params={"client_reference": "INV-2026-0042"}
         ).json()["data"]
 
+        assert held
         assert [t["status"] for t in held] == ["on_hold"] * len(held)
         assert {t["id"] for t in duplicates} == set(labels["S14"]["transfer_ids"])
 
@@ -90,7 +150,7 @@ class TestScenarioEvidence:
         quote = client.get(f"/v1/quotes/{transfer['quote_id']}").json()
 
         assert transfer["status"] == "pending_funds"
-        assert balance["available"] == "120.00"
+        assert Decimal(balance["available"]) < Decimal(transfer["source_amount"])
         assert [d["amount"] for d in deposits] == ["5000.00"]
         expires_in = datetime.fromisoformat(quote["expires_at"]) - NOW
         assert timedelta(hours=3) < expires_in < timedelta(hours=5)
@@ -120,6 +180,7 @@ class TestScenarioEvidence:
         assert [(line["direction"], line["match_status"]) for line in lines] == [
             ("debit", "status_mismatch")
         ]
+        assert eligibility["eligible"] is False
         assert eligibility["reason_code"] == "partner_has_no_payment"
 
     def test_s05_processing_past_sla(self, client: TestClient, tid: dict[str, str]) -> None:
@@ -185,6 +246,7 @@ class TestScenarioEvidence:
 
         assert statuses["bank_gamma"]["status"] == "outage"
         assert (lookup.status_code, error_code(lookup)) == (503, "partner_unavailable")
+        assert eligibility["eligible"] is False
         assert eligibility["reason_code"] == "partner_status_known"
 
 
@@ -212,6 +274,71 @@ class TestRetry:
         assert transfer["status_history"][-1]["actor"] == "ops"
         assert sum(1 for c in transfer["status_history"] if c["status"] == "processing") == 2
         assert events[-1]["type"] == "transfer.processing"
+
+    def test_a_retry_records_who_why_and_the_new_submission(
+        self, client: TestClient, tid: dict[str, str]
+    ) -> None:
+        before = client.get(f"/v1/transfers/{tid['S03']}").json()
+        merchant = before["merchant_id"]
+        available_before = client.get(f"/v1/merchants/{merchant}/balances").json()["data"][0]
+
+        client.post(
+            f"/v1/transfers/{tid['S03']}/retry",
+            json=ACTION,
+            headers={"Idempotency-Key": "retry-s03-0001"},
+        )
+
+        after = client.get(f"/v1/transfers/{tid['S03']}").json()
+        partner = client.get(f"/v1/partners/bank_alpha/payments/{after['provider_reference']}")
+        available_after = client.get(f"/v1/merchants/{merchant}/balances").json()["data"][0]
+        assert after["failure_code"] is None
+        assert [s["provider_reference"] for s in after["submissions"]] == [
+            before["provider_reference"],
+            after["provider_reference"],
+        ]
+        assert partner.json()["status"] == "accepted"
+        # Funds are taken again for the new attempt.
+        assert Decimal(available_before["available"]) - Decimal(
+            available_after["available"]
+        ) == Decimal(before["source_amount"])
+        change = after["status_history"][-1]
+        assert change["audit"] == {
+            "requested_by": "ops_test",
+            "reason": "approved in test",
+            "idempotency_key": "retry-s03-0001",
+        }
+        assert "approved in test" not in (change["note"] or "")  # caller text stays in audit
+
+    def test_the_same_key_for_another_transfer_is_rejected(
+        self, client: TestClient, tid: dict[str, str]
+    ) -> None:
+        headers = {"Idempotency-Key": "retry-shared-0001"}
+        client.post(f"/v1/transfers/{tid['S03']}/retry", json=ACTION, headers=headers)
+
+        other = client.post(f"/v1/transfers/{tid['S06']}/retry", json=ACTION, headers=headers)
+
+        assert (other.status_code, error_code(other)) == (422, "idempotency_key_reused")
+
+    def test_racing_retries_with_different_keys_execute_once(
+        self, client: TestClient, tid: dict[str, str]
+    ) -> None:
+        barrier = threading.Barrier(2)
+        statuses: list[int] = []
+
+        def retry(key: str) -> None:
+            barrier.wait()
+            response = client.post(
+                f"/v1/transfers/{tid['S03']}/retry", json=ACTION, headers={"Idempotency-Key": key}
+            )
+            statuses.append(response.status_code)
+
+        threads = [threading.Thread(target=retry, args=(f"race-key-000{n}",)) for n in (1, 2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert sorted(statuses) == [200, 409]
 
     def test_second_retry_with_a_new_key_is_refused(
         self, client: TestClient, tid: dict[str, str]

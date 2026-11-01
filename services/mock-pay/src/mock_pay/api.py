@@ -16,6 +16,7 @@ from mock_pay.domain import PartnerFound, PartnerUnavailable, RetryDecision
 from mock_pay.errors import ApiError, not_found
 from mock_pay.idempotency import IdempotencyConflictError, StoredResponse, fingerprint
 from mock_pay.models import (
+    ActionAudit,
     Balance,
     Deposit,
     FailureCode,
@@ -37,7 +38,7 @@ from mock_pay.models import (
     WebhookEvent,
 )
 from mock_pay.settings import Settings
-from mock_pay.store import RetryNotAllowedError, Store
+from mock_pay.store import InvalidCursorError, RetryNotAllowedError, Store
 
 IDEMPOTENCY_KEY_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{8,255}$")
 bearer = HTTPBearer(auto_error=False)
@@ -54,7 +55,10 @@ def require_api_key(
 ) -> None:
     settings: Settings = request.app.state.settings
     expected = settings.api_key.get_secret_value()
-    if credentials is None or not secrets.compare_digest(credentials.credentials, expected):
+    # Compare bytes: compare_digest raises on non-ASCII str, which would turn a bad key into a 500.
+    if credentials is None or not secrets.compare_digest(
+        credentials.credentials.encode(), expected.encode()
+    ):
         raise ApiError(401, "unauthorized", "Missing or invalid API key")
 
 
@@ -150,7 +154,7 @@ def get_merchant(merchant_id: str, store: StoreDep) -> Merchant:
 @router.get("/merchants/{merchant_id}/balances", summary="Merchant balances")
 def list_balances(merchant_id: str, store: StoreDep) -> ListResponse[Balance]:
     _merchant(store, merchant_id)
-    return ListResponse(data=[b for b in store.balances if b.merchant_id == merchant_id])
+    return ListResponse(data=store.balances_for(merchant_id))
 
 
 @router.get("/merchants/{merchant_id}/virtual-accounts", summary="Merchant virtual accounts")
@@ -193,13 +197,16 @@ def list_transfers(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     starting_after: Annotated[str | None, Query(description="Cursor: a transfer id")] = None,
 ) -> TransferPage:
-    items, has_more = store.list_transfers(
-        merchant_id=merchant_id,
-        status=status,
-        client_reference=client_reference,
-        limit=limit,
-        starting_after=starting_after,
-    )
+    try:
+        items, has_more = store.list_transfers(
+            merchant_id=merchant_id,
+            status=status,
+            client_reference=client_reference,
+            limit=limit,
+            starting_after=starting_after,
+        )
+    except InvalidCursorError as exc:
+        raise ApiError(400, "invalid_cursor", f"No transfer with id {starting_after!r}") from exc
     summaries = [TransferSummary.model_validate(t.model_dump(include=_SUMMARY)) for t in items]
     return TransferPage(
         data=summaries,
@@ -245,10 +252,11 @@ def retry_transfer(
     store: StoreDep,
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ) -> JSONResponse:
-    def action() -> StoredResponse:
+    def action(key: str) -> StoredResponse:
         _transfer(store, transfer_id)
+        audit = ActionAudit(requested_by=body.requested_by, reason=body.reason, idempotency_key=key)
         try:
-            transfer, decision = store.retry_transfer(transfer_id, body.requested_by, body.reason)
+            transfer, decision = store.retry_transfer(transfer_id, audit)
         except RetryNotAllowedError as exc:
             raise ApiError(
                 409,
@@ -294,12 +302,15 @@ def list_statement_lines(
     match_status: Literal["matched", "unmatched", "status_mismatch"] | None = None,
     statement_date: date | None = None,
 ) -> ListResponse[StatementLine]:
+    lines = store.statement_lines
+    if transfer_id is not None:  # same matching rule as the retry policy uses
+        transfer = store.transfers.get(transfer_id)
+        lines = store.statement_lines_for(transfer) if transfer else []
     return ListResponse(
         data=[
             line
-            for line in store.statement_lines
-            if (transfer_id is None or line.matched_transfer_id == transfer_id)
-            and (provider is None or line.provider == provider)
+            for line in lines
+            if (provider is None or line.provider == provider)
             and (provider_reference is None or line.provider_reference == provider_reference)
             and (match_status is None or line.match_status == match_status)
             and (statement_date is None or line.statement_date == statement_date)
@@ -338,7 +349,7 @@ def resend_webhook_event(
     store: StoreDep,
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ) -> JSONResponse:
-    def action() -> StoredResponse:
+    def action(_: str) -> StoredResponse:
         if event_id not in store.events:
             raise not_found("webhook_event", event_id)
         event, result = store.resend_event(event_id)
@@ -354,7 +365,7 @@ def _run_idempotent(
     request: Request,
     body: ActionRequest,
     key: str | None,
-    action: Callable[[], StoredResponse],
+    action: Callable[[str], StoredResponse],
 ) -> JSONResponse:
     if key is None:
         raise ApiError(400, "idempotency_key_required", "Send an Idempotency-Key header")
@@ -366,7 +377,9 @@ def _run_idempotent(
         )
     try:
         response, replayed = store.idempotency.run(
-            key, fingerprint("POST", request.url.path, body.model_dump(mode="json")), action
+            key,
+            fingerprint("POST", request.url.path, body.model_dump(mode="json")),
+            lambda: action(key),
         )
     except IdempotencyConflictError as exc:
         raise ApiError(

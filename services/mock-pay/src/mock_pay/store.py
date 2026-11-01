@@ -1,13 +1,15 @@
 """In-memory state of the mock API, loaded from the committed seed files.
 
-Each app instance gets its own Store, so tests never share state. Actions that change state run
-under one lock and re-check their rules inside it (no gap between "check" and "act").
+Each app instance gets its own Store, so tests never share state. ``Store._lock`` is the
+consistency guarantee: actions re-check their rules and apply their effects under it (no gap
+between "check" and "act"), and readers take snapshots under it.
 """
 
 import functools
 import hashlib
 import json
 import threading
+from decimal import Decimal
 from importlib import resources
 from typing import Any, Literal
 
@@ -19,15 +21,19 @@ from mock_pay.domain import (
     RetryDecision,
     assert_transition,
     evaluate_retry,
+    related_statement_lines,
 )
 from mock_pay.idempotency import IdempotencyStore
 from mock_pay.models import (
+    ActionAudit,
+    Balance,
     Dataset,
     DeliveryAttempt,
     PartnerPayment,
     Provider,
     StatementLine,
     StatusChange,
+    Submission,
     Transfer,
     TransferStatus,
     WebhookEvent,
@@ -40,6 +46,10 @@ class RetryNotAllowedError(Exception):
     def __init__(self, decision: RetryDecision) -> None:
         super().__init__(decision.reason_code)
         self.decision = decision
+
+
+class InvalidCursorError(ValueError):
+    pass
 
 
 @functools.cache
@@ -68,7 +78,7 @@ class Store:
         self.rails = dataset.rails
         self.partner_statuses = {p.provider: p for p in dataset.partner_statuses}
         self.merchants = {m.id: m for m in dataset.merchants}
-        self.balances = dataset.balances
+        self.balances = {(b.merchant_id, b.currency): b for b in dataset.balances}
         self.virtual_accounts = dataset.virtual_accounts
         self.deposits = dataset.deposits
         self.recipients = {r.id: r for r in dataset.recipients}
@@ -97,22 +107,39 @@ class Store:
         limit: int = 20,
         starting_after: str | None = None,
     ) -> tuple[list[Transfer], bool]:
-        items = sorted(self.transfers.values(), key=lambda t: (t.created_at, t.id), reverse=True)
-        items = [
-            t
-            for t in items
-            if (merchant_id is None or t.merchant_id == merchant_id)
-            and (status is None or t.status == status)
-            and (client_reference is None or t.client_reference == client_reference)
-        ]
+        """Newest first. The cursor is positioned by the cursor transfer's place in the full
+        ordering, so it keeps working even if that transfer no longer matches the filters."""
+        with self._lock:
+            transfers = list(self.transfers.values())
         if starting_after is not None:
-            ids = [t.id for t in items]
-            items = items[ids.index(starting_after) + 1 :] if starting_after in ids else []
+            cursor = next((t for t in transfers if t.id == starting_after), None)
+            if cursor is None:
+                raise InvalidCursorError(starting_after)
+            transfers = [
+                t for t in transfers if (t.created_at, t.id) < (cursor.created_at, cursor.id)
+            ]
+        items = sorted(
+            (
+                t
+                for t in transfers
+                if (merchant_id is None or t.merchant_id == merchant_id)
+                and (status is None or t.status == status)
+                and (client_reference is None or t.client_reference == client_reference)
+            ),
+            key=lambda t: (t.created_at, t.id),
+            reverse=True,
+        )
         return items[:limit], len(items) > limit
 
+    def balances_for(self, merchant_id: str) -> list[Balance]:
+        with self._lock:
+            return [b for (owner, _), b in self.balances.items() if owner == merchant_id]
+
     def events_for(self, transfer_id: str) -> list[WebhookEvent]:
+        with self._lock:
+            events = list(self.events.values())
         return sorted(
-            (e for e in self.events.values() if e.transfer_id == transfer_id),
+            (e for e in events if e.transfer_id == transfer_id),
             key=lambda e: (e.created_at, e.id),
         )
 
@@ -125,28 +152,26 @@ class Store:
         return PartnerFound(payment) if payment else PartnerNotFound()
 
     def statement_lines_for(self, transfer: Transfer) -> list[StatementLine]:
-        return [
-            line
-            for line in self.statement_lines
-            if line.matched_transfer_id == transfer.id
-            or (
-                transfer.provider_reference is not None
-                and line.provider_reference == transfer.provider_reference
-            )
-        ]
+        return related_statement_lines(transfer, self.statement_lines)
 
     def retry_decision(self, transfer: Transfer) -> RetryDecision:
-        partner = (
-            self.partner_lookup(transfer.provider, transfer.provider_reference)
-            if transfer.provider_reference
-            else None
+        balance = self.balances.get((transfer.merchant_id, transfer.source_currency))
+        return evaluate_retry(
+            transfer,
+            now=self.now,
+            quote=self.quotes[transfer.quote_id],
+            available=balance.available if balance else Decimal(0),
+            partner={
+                s.provider_reference: self.partner_lookup(transfer.provider, s.provider_reference)
+                for s in transfer.submissions
+            },
+            statement_lines=self.statement_lines_for(transfer),
         )
-        return evaluate_retry(transfer, partner, self.statement_lines_for(transfer))
 
     # --- actions ----------------------------------------------------------------------------
 
     def retry_transfer(
-        self, transfer_id: str, requested_by: str, reason: str
+        self, transfer_id: str, audit: ActionAudit
     ) -> tuple[Transfer, RetryDecision]:
         with self._lock:
             transfer = self.transfers[transfer_id]
@@ -155,14 +180,19 @@ class Store:
                 raise RetryNotAllowedError(decision)
             assert_transition(transfer.status, TransferStatus.PROCESSING)
             attempt = transfer.attempt + 1
-            base_reference = (transfer.provider_reference or transfer.id).split("-R")[0]
-            reference = f"{base_reference}-R{attempt}"
+            reference = f"{transfer.submissions[0].provider_reference}-R{attempt}"
             updated = transfer.model_copy(
                 update={
                     "status": TransferStatus.PROCESSING,
                     "failure_code": None,
                     "attempt": attempt,
                     "provider_reference": reference,
+                    "submissions": [
+                        *transfer.submissions,
+                        Submission(
+                            attempt=attempt, provider_reference=reference, submitted_at=self.now
+                        ),
+                    ],
                     "updated_at": self.now,
                     "status_history": [
                         *transfer.status_history,
@@ -170,12 +200,22 @@ class Store:
                             status=TransferStatus.PROCESSING,
                             at=self.now,
                             actor="ops",
-                            note=f"Retry (attempt {attempt}) requested by {requested_by}: {reason}",
+                            note=f"Retry (attempt {attempt}) requested through the ops API",
+                            audit=audit,
                         ),
                     ],
                 }
             )
             self.transfers[transfer_id] = updated
+            key = (updated.merchant_id, updated.source_currency)
+            balance = self.balances[key]
+            self.balances[key] = balance.model_copy(  # the new attempt is funded again
+                update={
+                    "available": balance.available - updated.source_amount,
+                    "reserved": balance.reserved + updated.source_amount,
+                    "updated_at": self.now,
+                }
+            )
             self.partner_payments[(updated.provider, reference)] = PartnerPayment(
                 provider=updated.provider,
                 provider_reference=reference,
@@ -220,7 +260,7 @@ class Store:
         self, merchant_id: str, number: int, trigger: Literal["automatic", "manual_resend"]
     ) -> DeliveryAttempt:
         """Simulate one delivery: healthy endpoints answer 200, failing ones fail the same way
-        they have been failing (copied from their latest failed attempt)."""
+        they have been failing (copied from their latest failed attempt). Caller holds the lock."""
         merchant = self.merchants[merchant_id]
         if merchant.webhook_endpoint_status == "healthy":
             return DeliveryAttempt(

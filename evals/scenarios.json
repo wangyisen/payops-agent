@@ -30,10 +30,10 @@
       "tr_m1c3tyggpd4q"
     ],
     "question": "Why hasn't transfer tr_m1c3tyggpd4q been sent yet? Fourth Coffee says they topped up yesterday.",
-    "root_cause": "Available balance (120.00 USD) is below the transfer amount. The 5,000.00 USD top-up came from a third party (Brightline Holdings LLC) and is pending review, so it has not been credited. The quote expires in about 4 hours; after that the transfer will fail with quote_expired.",
+    "root_cause": "The merchant's available balance has stayed below the 4,800.00 USD transfer amount. The 5,000.00 USD top-up came from a third party (Brightline Holdings LLC) and is pending review, so it has not been credited. The quote expires in about 4 hours; after that the transfer will fail with quote_expired.",
     "key_evidence": [
       "status pending_funds",
-      "available balance 120.00 USD",
+      "available balance below 4,800.00 USD",
       "deposit pending_review, sender_name_mismatch",
       "quote expires in about 4 hours"
     ],
@@ -74,7 +74,7 @@
       "tr_erkzddqdvze0"
     ],
     "question": "Northwind's transfer tr_erkzddqdvze0 shows as failed, but their supplier says the money arrived. Should we retry?",
-    "root_cause": "Our call to bank_alpha timed out and the transfer was marked failed, but the partner executed it: the partner reports it paid and yesterday's statement has a matching debit flagged status_mismatch. A retry would pay twice.",
+    "root_cause": "Our call to bank_alpha timed out and the transfer was marked failed, but the partner executed it: the partner reports it paid and yesterday's statement has a matching debit flagged status_mismatch. A retry would pay twice. Because the transfer was marked failed, its funds were also released back to the merchant's balance although the money left.",
     "key_evidence": [
       "failure_code partner_timeout",
       "partner lookup: paid",
@@ -285,10 +285,11 @@
       "tr_qdbv06smwmn6"
     ],
     "question": "Fourth Coffee says their supplier was paid twice for invoice INV-2026-0042.",
-    "root_cause": "The merchant created two transfers 90 seconds apart with the same client_reference, amount and recipient, without an Idempotency-Key. Both were valid, separate transfers and both were paid. Recovery is a recall request through the partner; the merchant should send an Idempotency-Key in future.",
+    "root_cause": "The merchant created two transfers 90 seconds apart with the same client_reference, amount and recipient, and neither request carried an Idempotency-Key (request_idempotency_key is null). Both were valid, separate transfers and both were paid. Recovery is a recall request through the partner; the merchant should send an Idempotency-Key in future.",
     "key_evidence": [
       "two completed transfers with client_reference INV-2026-0042",
-      "created 90 seconds apart, same amount and recipient"
+      "created 90 seconds apart, same amount and recipient",
+      "request_idempotency_key is null on both"
     ],
     "expected_action": "partner_recall",
     "side_effect_allowed": false,

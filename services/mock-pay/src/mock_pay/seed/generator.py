@@ -17,6 +17,7 @@ from decimal import ROUND_HALF_EVEN, Decimal
 from typing import Literal
 
 from mock_pay.domain import assert_transition
+from mock_pay.ledger import LedgerEntry, ledger_entries
 from mock_pay.models import (
     Balance,
     Dataset,
@@ -36,6 +37,7 @@ from mock_pay.models import (
     ReturnCode,
     StatementLine,
     StatusChange,
+    Submission,
     Transfer,
     TransferStatus,
     VirtualAccount,
@@ -89,14 +91,41 @@ WEBHOOK_RETRY_SCHEDULE = tuple(timedelta(minutes=m) for m in (0, 1, 5, 30, 2 * 6
 QUOTE_VALIDITY = timedelta(hours=24)
 
 RECIPIENT_NAMES = {
-    "EUR": ("Keller Logistik GmbH", "Atelier Moreau SARL", "Jansen Bouw B.V.", "Maria Fischer"),
-    "GBP": ("Harrow & Finch Ltd", "Pennine Print Co", "Olivia Clarke", "James Whitmore"),
-    "USD": ("Redwood Supply LLC", "Lakeside Packaging Inc", "Emily Carter", "Daniel Brooks"),
+    "EUR": (
+        "Keller Logistik GmbH",
+        "Atelier Moreau SARL",
+        "Jansen Bouw B.V.",
+        "Maria Fischer",
+        "Rossi Ricambi S.r.l.",
+        "Nordlicht Druck GmbH",
+        "Sofia Almeida",
+    ),
+    "GBP": (
+        "Harrow & Finch Ltd",
+        "Pennine Print Co",
+        "Olivia Clarke",
+        "James Whitmore",
+        "Kestrel Joinery Ltd",
+        "Brightwater Studio",
+        "Amelia Hughes",
+    ),
+    "USD": (
+        "Redwood Supply LLC",
+        "Lakeside Packaging Inc",
+        "Emily Carter",
+        "Daniel Brooks",
+        "Prairie Freight LLC",
+        "Summit Office Goods",
+        "Grace Nguyen",
+    ),
     "MXN": (
         "Transportes del Bajío S.A.",
         "Distribuidora Pacífico S.A. de C.V.",
         "Lucía Hernández",
         "Jorge Ramírez",
+        "Talleres Sierra Madre",
+        "Empaques del Norte S.A.",
+        "Valeria Ortiz",
     ),
 }
 RECIPIENT_BANKS = {
@@ -150,6 +179,7 @@ MERCHANTS = (
 )
 BACKGROUND_TRANSFERS_PER_MERCHANT = 18
 PARTNER_OUTAGE = (Provider.BANK_GAMMA, timedelta(hours=3))
+HEALTHY_BALANCE = Decimal("30000.00")  # minimum available balance today, unconstrained merchants
 
 
 class ScenarioLabel(Model):
@@ -176,6 +206,15 @@ class Step:
     note: str | None = None
 
 
+@dataclass(frozen=True)
+class FundingShortage:
+    """A merchant is short of funds from ``since`` on: its balance at that moment is exactly
+    ``balance`` and none of its other payouts get funded while a scenario waits."""
+
+    since: datetime
+    balance: Decimal
+
+
 class Builder:
     def __init__(self, seed: int = SEED, now: datetime = NOW) -> None:
         self.rng = random.Random(seed)
@@ -195,7 +234,8 @@ class Builder:
         self.partner_payments: list[PartnerPayment] = []
         self.statement_lines: list[StatementLine] = []
         self.labels: list[ScenarioLabel] = []
-        self._balance_overrides: dict[str, Decimal] = {}
+        self._reserved_recipients: set[str] = set()  # used by scenarios, never by background
+        self._shortages: dict[str, FundingShortage] = {}
 
     # --- primitives -------------------------------------------------------------------------
 
@@ -281,8 +321,18 @@ class Builder:
                 )
 
     def recipient(self, merchant: Merchant, rail: RailCode, index: int) -> Recipient:
-        matching = [r for r in self.recipients[merchant.id] if r.rail == rail]
-        return matching[index]
+        """A recipient for a scenario. It is reserved, so background traffic never uses it and
+        cannot contradict the scenario (e.g. pay an account the scenario says is closed)."""
+        recipient = [r for r in self.recipients[merchant.id] if r.rail == rail][index]
+        self._reserved_recipients.add(recipient.id)
+        return recipient
+
+    def funding_shortage(self, merchant: Merchant, *, since: datetime, balance: Decimal) -> None:
+        self._shortages[merchant.id] = FundingShortage(since=since, balance=balance)
+
+    def idempotency_key(self) -> str | None:
+        # Most merchants send one; some integrations don't (see scenario S14).
+        return None if self.rng.random() < 0.15 else f"ik_{self.rng.getrandbits(64):016x}"
 
     def add_deposit(
         self,
@@ -353,6 +403,7 @@ class Builder:
         return_code: ReturnCode | None = None,
         partner_status: Literal["paid"] | None = None,
         partner_message: str | None = None,
+        request_idempotency_key: str | Literal["generate"] | None = "generate",
     ) -> Transfer:
         rail = RAIL_BY_CODE[recipient.rail]
         quote = self.add_quote(
@@ -372,20 +423,27 @@ class Builder:
         if history[-1].at > self.now:
             raise ValueError(f"{key}: status history ends in the future")
         processing_at = next((c.at for c in history if c.status == TransferStatus.PROCESSING), None)
+        reference = self.new_reference(rail.provider, processing_at) if processing_at else None
+        if request_idempotency_key == "generate":
+            request_idempotency_key = self.idempotency_key()
         transfer = Transfer(
             id=self.stable_id("tr", key),
             merchant_id=merchant.id,
             recipient_id=recipient.id,
             quote_id=quote.id,
             client_reference=client_reference or f"PO-{self.rng.randint(10_000, 99_999)}",
+            request_idempotency_key=request_idempotency_key,
             source_amount=quote.source_amount,
             source_currency=quote.source_currency,
             target_amount=quote.target_amount,
             target_currency=quote.target_currency,
             rail=rail.code,
             provider=rail.provider,
-            provider_reference=(
-                self.new_reference(rail.provider, processing_at) if processing_at else None
+            provider_reference=reference,
+            submissions=(
+                [Submission(attempt=1, provider_reference=reference, submitted_at=processing_at)]
+                if reference and processing_at
+                else []
             ),
             status=history[-1].status,
             failure_code=failure_code,
@@ -566,72 +624,107 @@ class Builder:
     def add_background(self) -> None:
         for spec in MERCHANTS:
             merchant = self.merchants[spec.key]
-            for index in range(BACKGROUND_TRANSFERS_PER_MERCHANT):
-                recipient = self.rng.choice(self.recipients[merchant.id])
-                rail = RAIL_BY_CODE[recipient.rail]
-                created_at = self.now - timedelta(minutes=self.rng.randint(90, 30 * 24 * 60))
-                sla = timedelta(minutes=rail.sla_minutes)
-                settle = sla * self.rng.uniform(0.1, 0.7)
-                roll = self.rng.random()
-                failure_code: FailureCode | None = None
-                return_code: ReturnCode | None = None
-                steps: list[Step]
-                if roll < 0.04 and created_at < self.now - timedelta(hours=6):
-                    steps = [
-                        Step(TransferStatus.PENDING_FUNDS, timedelta(0)),
-                        Step(
-                            TransferStatus.CANCELLED,
-                            timedelta(hours=self.rng.randint(1, 5)),
-                            note="Cancelled by merchant via API",
-                        ),
-                    ]
-                elif roll < 0.10:
-                    failure_code = self.rng.choice(
-                        [FailureCode.INVALID_ACCOUNT_NUMBER, FailureCode.NAME_MISMATCH]
-                    )
-                    steps = [
-                        Step(TransferStatus.PROCESSING, timedelta(minutes=1)),
-                        Step(
-                            TransferStatus.FAILED,
-                            timedelta(minutes=1) + settle,
-                            "partner",
-                            _rejection_note(failure_code, rail.code),
-                        ),
-                    ]
-                else:
-                    steps = [
-                        Step(TransferStatus.PROCESSING, timedelta(minutes=1)),
-                        Step(TransferStatus.COMPLETED, timedelta(minutes=1) + settle, "partner"),
-                    ]
-                    returned_after = timedelta(days=self.rng.randint(1, 3))
-                    if roll > 0.96 and created_at + settle + returned_after < self.now:
-                        return_code = ReturnCode.ACCOUNT_CLOSED
-                        steps.append(
-                            Step(
-                                TransferStatus.RETURNED,
-                                timedelta(minutes=1) + settle + returned_after,
-                                "partner",
-                                _return_note(rail.code),
-                            )
-                        )
-                steps = [s for s in steps if created_at + s.after <= self.now]
-                if not steps or steps[-1].status != TransferStatus.FAILED:
-                    failure_code = None
-                if not steps or steps[-1].status != TransferStatus.RETURNED:
-                    return_code = None
-                self.add_transfer(
-                    key=f"bg:{spec.key}:{index:02d}",
-                    merchant=merchant,
-                    recipient=recipient,
-                    amount=self.money(250, 25_000),
-                    created_at=created_at,
-                    steps=steps,
-                    failure_code=failure_code,
-                    return_code=return_code,
+            shortage = self._shortages.get(merchant.id)
+            # A short merchant gets no new payouts once the shortage starts.
+            latest = (shortage.since if shortage else self.now) - timedelta(minutes=90)
+            pool = [
+                r for r in self.recipients[merchant.id] if r.id not in self._reserved_recipients
+            ]
+            window = int((latest - (self.now - timedelta(days=30))).total_seconds() // 60)
+            plans = sorted(
+                (
+                    latest - timedelta(minutes=self.rng.randint(0, window)),
+                    self.rng.choice(pool),
+                    self.money(250, 25_000),
+                    self.rng.random(),
+                )
+                for _ in range(BACKGROUND_TRANSFERS_PER_MERCHANT)
+            )
+            last_for_recipient = {
+                recipient.id: index for index, (_, recipient, _, _) in enumerate(plans)
+            }
+            for index, (created_at, recipient, amount, roll) in enumerate(plans):
+                # Only a recipient's last payout may hit a closed or invalid account; otherwise a
+                # later payout would succeed to an account the data says is broken. A short
+                # merchant's payouts are never refunded, which would change its balance.
+                final = last_for_recipient[recipient.id] == index and shortage is None
+                self._add_background_transfer(
+                    f"bg:{spec.key}:{index:02d}",
+                    merchant,
+                    recipient,
+                    amount,
+                    created_at,
+                    roll if final else 0.5,
                 )
 
+    def _add_background_transfer(
+        self,
+        key: str,
+        merchant: Merchant,
+        recipient: Recipient,
+        amount: Decimal,
+        created_at: datetime,
+        roll: float,
+    ) -> None:
+        rail = RAIL_BY_CODE[recipient.rail]
+        settle = timedelta(minutes=rail.sla_minutes) * self.rng.uniform(0.1, 0.7)
+        failure_code: FailureCode | None = None
+        return_code: ReturnCode | None = None
+        steps = [Step(TransferStatus.PROCESSING, timedelta(minutes=1))]
+        if roll < 0.06:
+            failure_code = self.rng.choice(
+                [FailureCode.INVALID_ACCOUNT_NUMBER, FailureCode.NAME_MISMATCH]
+            )
+            steps.append(
+                Step(
+                    TransferStatus.FAILED,
+                    timedelta(minutes=1) + settle,
+                    "partner",
+                    _rejection_note(failure_code, rail.code),
+                )
+            )
+        else:
+            steps.append(Step(TransferStatus.COMPLETED, timedelta(minutes=1) + settle, "partner"))
+            returned_after = timedelta(minutes=1) + settle + timedelta(days=self.rng.randint(1, 3))
+            if roll > 0.94 and created_at + returned_after < self.now:
+                return_code = ReturnCode.ACCOUNT_CLOSED
+                steps.append(
+                    Step(
+                        TransferStatus.RETURNED, returned_after, "partner", _return_note(rail.code)
+                    )
+                )
+        steps = [step for step in steps if created_at + step.after <= self.now]
+        if steps[-1].status != TransferStatus.FAILED:
+            failure_code = None
+        if steps[-1].status != TransferStatus.RETURNED:
+            return_code = None
+        self.add_transfer(
+            key=key,
+            merchant=merchant,
+            recipient=recipient,
+            amount=amount,
+            created_at=created_at,
+            steps=steps,
+            failure_code=failure_code,
+            return_code=return_code,
+        )
+
     def add_balances(self) -> None:
+        """Derive every balance from the ledger, so tracing the money backward from today never
+        goes negative and every "waiting for funds" story holds."""
         for merchant in self.merchants.values():
+            shortage = self._shortages.get(merchant.id)
+            if shortage is None:
+                entries = ledger_entries(self.transfers, self.deposits, merchant.id)
+                # Enough history to never go negative, and a healthy balance today so that a
+                # safe retry (S03) is never blocked for lack of funds.
+                net = sum((e.amount for e in entries), Decimal(0))
+                floor = -min(_prefix_sums(entries), default=Decimal(0))
+                opening = max(floor, HEALTHY_BALANCE - net) + self.money(5_000, 25_000)
+            else:
+                opening = self._size_topups(merchant, shortage)
+                entries = ledger_entries(self.transfers, self.deposits, merchant.id)
+            available = opening + sum((e.amount for e in entries), Decimal(0))
             reserved = sum(
                 (
                     t.source_amount
@@ -644,11 +737,53 @@ class Builder:
                 Balance(
                     merchant_id=merchant.id,
                     currency="USD",
-                    available=self._balance_overrides.get(merchant.id, self.money(20_000, 250_000)),
+                    available=available,
                     reserved=reserved,
                     updated_at=self.now - timedelta(minutes=self.rng.randint(1, 30)),
                 )
             )
+
+    def _size_topups(self, merchant: Merchant, shortage: FundingShortage) -> Decimal:
+        """Resize the merchant's top-ups before the shortage "just in time": each covers the
+        payouts until the next one plus a small cushion, and the last lands the balance at
+        exactly ``shortage.balance`` when the shortage starts. Returns the opening balance."""
+        topups = sorted(
+            (
+                (d.credited_at, d)
+                for d in self.deposits
+                if d.merchant_id == merchant.id
+                and d.credited_at is not None
+                and d.credited_at < shortage.since
+            ),
+            key=lambda pair: pair[0],
+        )
+        topup_ids = {d.id for _, d in topups}
+        others = [
+            e
+            for e in ledger_entries(self.transfers, self.deposits, merchant.id)
+            if e.source_id not in topup_ids
+        ]
+        first_at = topups[0][0]
+        before = [e for e in others if e.at < first_at]
+        opening = -min(_prefix_sums(before), default=Decimal(0)) + Decimal("100.00")
+        balance = opening + sum((e.amount for e in before), Decimal(0))
+        for index, (at, deposit) in enumerate(topups):
+            last = index == len(topups) - 1
+            until = shortage.since if last else topups[index + 1][0]
+            segment = [e for e in others if at <= e.at < until or (last and e.at == until)]
+            net = sum((e.amount for e in segment), Decimal(0))
+            if last:
+                amount = shortage.balance - balance - net
+            else:
+                dip = -min(_prefix_sums(segment), default=Decimal(0))
+                amount = max(dip - balance, Decimal(0)) + self.money(1_000, 5_000)
+            if amount <= 0 or balance + amount + min(_prefix_sums(segment), default=0) < 0:
+                raise ValueError(f"{merchant.name}: cannot fund the shortage scenario")
+            self.deposits[self.deposits.index(deposit)] = deposit.model_copy(
+                update={"amount": amount}
+            )
+            balance += amount + net
+        return opening
 
     # --- output -----------------------------------------------------------------------------
 
@@ -681,6 +816,15 @@ class Builder:
             partner_payments=sorted(self.partner_payments, key=lambda p: p.provider_reference),
             statement_lines=sorted(self.statement_lines, key=lambda s: (s.statement_date, s.id)),
         )
+
+
+def _prefix_sums(entries: Sequence[LedgerEntry]) -> list[Decimal]:
+    running = Decimal(0)
+    sums = []
+    for entry in entries:
+        running += entry.amount
+        sums.append(running)
+    return sums
 
 
 def _rejection_note(code: FailureCode, rail: RailCode) -> str:

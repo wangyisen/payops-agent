@@ -8,21 +8,7 @@ from typing import Any
 from mock_pay.models import Dataset
 from mock_pay.seed.generator import NOW, SEED, Builder, ScenarioLabel
 from mock_pay.seed.scenarios import add_scenarios
-
-COLLECTIONS = (
-    "rails",
-    "partner_statuses",
-    "merchants",
-    "balances",
-    "virtual_accounts",
-    "deposits",
-    "recipients",
-    "quotes",
-    "transfers",
-    "webhook_events",
-    "partner_payments",
-    "statement_lines",
-)
+from mock_pay.store import COLLECTIONS
 
 
 def build(seed: int = SEED, now: datetime = NOW) -> tuple[Dataset, list[ScenarioLabel]]:

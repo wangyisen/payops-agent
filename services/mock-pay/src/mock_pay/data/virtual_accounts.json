@@ -13,35 +13,35 @@
     "merchant_id": "mer_jwbv1wryn6cg",
     "currency": "USD",
     "bank_name": "Example Bank N.A.",
-    "account_last4": "1298",
+    "account_last4": "9953",
     "status": "active",
-    "created_at": "2024-05-15T09:30:00Z"
+    "created_at": "2024-04-11T09:30:00Z"
   },
   {
     "id": "va_p5xw8aecxn0v",
     "merchant_id": "mer_g553954ss836",
     "currency": "USD",
     "bank_name": "Example Bank N.A.",
-    "account_last4": "3723",
+    "account_last4": "0348",
     "status": "active",
-    "created_at": "2024-06-20T09:30:00Z"
+    "created_at": "2024-08-09T09:30:00Z"
   },
   {
     "id": "va_0zgvw9ycpvgb",
     "merchant_id": "mer_px55xzrce9z1",
     "currency": "USD",
     "bank_name": "Example Bank N.A.",
-    "account_last4": "4249",
+    "account_last4": "3564",
     "status": "active",
-    "created_at": "2024-07-10T09:30:00Z"
+    "created_at": "2024-10-27T09:30:00Z"
   },
   {
     "id": "va_z05wbxzr0me7",
     "merchant_id": "mer_vkbafc6c1rx2",
     "currency": "USD",
     "bank_name": "Example Bank N.A.",
-    "account_last4": "2052",
+    "account_last4": "7036",
     "status": "active",
-    "created_at": "2024-07-07T09:30:00Z"
+    "created_at": "2024-10-12T09:30:00Z"
   }
 ]

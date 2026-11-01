@@ -82,7 +82,7 @@ def add_scenarios(b: Builder) -> None:
         review_reason="sender_name_mismatch: third-party funding requires manual review",
         received_at=now - 18 * H,
     )
-    b._balance_overrides[fourthcoffee.id] = Decimal("120.00")
+    b.funding_shortage(fourthcoffee, since=s02.created_at, balance=Decimal("120.00"))
     b.labels.append(
         ScenarioLabel(
             id="S02",
@@ -93,14 +93,14 @@ def add_scenarios(b: Builder) -> None:
             question=f"Why hasn't transfer {s02.id} been sent yet? Fourth Coffee says they "
             "topped up yesterday.",
             root_cause=(
-                "Available balance (120.00 USD) is below the transfer amount. The 5,000.00 USD "
-                "top-up came from a third party (Brightline Holdings LLC) and is pending review, "
-                "so it has not been credited. The quote expires in about 4 hours; after that the "
-                "transfer will fail with quote_expired."
+                "The merchant's available balance has stayed below the 4,800.00 USD transfer "
+                "amount. The 5,000.00 USD top-up came from a third party (Brightline Holdings "
+                "LLC) and is pending review, so it has not been credited. The quote expires in "
+                "about 4 hours; after that the transfer will fail with quote_expired."
             ),
             key_evidence=[
                 "status pending_funds",
-                "available balance 120.00 USD",
+                "available balance below 4,800.00 USD",
                 "deposit pending_review, sender_name_mismatch",
                 "quote expires in about 4 hours",
             ],
@@ -171,7 +171,9 @@ def add_scenarios(b: Builder) -> None:
             root_cause=(
                 "Our call to bank_alpha timed out and the transfer was marked failed, but the "
                 "partner executed it: the partner reports it paid and yesterday's statement has a "
-                "matching debit flagged status_mismatch. A retry would pay twice."
+                "matching debit flagged status_mismatch. A retry would pay twice. Because the "
+                "transfer was marked failed, its funds were also released back to the merchant's "
+                "balance although the money left."
             ),
             key_evidence=[
                 "failure_code partner_timeout",
@@ -226,7 +228,7 @@ def add_scenarios(b: Builder) -> None:
         created_at=now - 27 * H,
         steps=[
             Step(S.PROCESSING, M),
-            Step(S.FAILED, 5 * H, "partner", "R04 Invalid account number structure"),
+            Step(S.FAILED, 8 * H, "partner", "R04 Invalid account number structure"),
         ],
         failure_code=FailureCode.INVALID_ACCOUNT_NUMBER,
     )
@@ -363,6 +365,7 @@ def add_scenarios(b: Builder) -> None:
         ],
         failure_code=FailureCode.QUOTE_EXPIRED,
     )
+    b.funding_shortage(fabrikam, since=s10.created_at, balance=Decimal("2150.00"))
     b.add_deposit(
         key="S10",
         merchant=fabrikam,
@@ -496,6 +499,7 @@ def add_scenarios(b: Builder) -> None:
             created_at=first_at + offset,
             steps=[Step(S.PROCESSING, M), Step(S.COMPLETED, 20 * H, "partner")],
             client_reference="INV-2026-0042",
+            request_idempotency_key=None,
         )
         for n, offset in enumerate((timedelta(0), timedelta(seconds=90)))
     ]
@@ -509,13 +513,15 @@ def add_scenarios(b: Builder) -> None:
             question="Fourth Coffee says their supplier was paid twice for invoice INV-2026-0042.",
             root_cause=(
                 "The merchant created two transfers 90 seconds apart with the same "
-                "client_reference, amount and recipient, without an Idempotency-Key. Both were "
+                "client_reference, amount and recipient, and neither request carried an "
+                "Idempotency-Key (request_idempotency_key is null). Both were "
                 "valid, separate transfers and both were paid. Recovery is a recall request "
                 "through the partner; the merchant should send an Idempotency-Key in future."
             ),
             key_evidence=[
                 "two completed transfers with client_reference INV-2026-0042",
                 "created 90 seconds apart, same amount and recipient",
+                "request_idempotency_key is null on both",
             ],
             expected_action="partner_recall",
             side_effect_allowed=False,

@@ -50,6 +50,11 @@ def install_error_handlers(app: FastAPI) -> None:
             422, "invalid_request", "Request validation failed", {"errors": exc.errors()}
         )
 
+    @app.exception_handler(Exception)
+    async def handle_unexpected_error(_: Request, exc: Exception) -> JSONResponse:
+        # Keep the one error shape even for bugs, without leaking internals to the caller.
+        return error_response(500, "internal_error", "Internal server error")
+
     @app.exception_handler(StarletteHTTPException)
     async def handle_http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
         codes = {404: "route_not_found", 405: "method_not_allowed"}

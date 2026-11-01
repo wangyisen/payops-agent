@@ -141,11 +141,29 @@ class Quote(Model):
     expires_at: datetime
 
 
+class ActionAudit(Model):
+    """Who asked for an ops action and why. Untrusted: free text supplied by the API caller."""
+
+    requested_by: str
+    reason: str
+    idempotency_key: str
+
+
 class StatusChange(Model):
     status: TransferStatus
     at: datetime
     actor: Literal["system", "partner", "compliance", "ops"]
     note: str | None = None
+    audit: ActionAudit | None = None  # set on changes made through the ops API
+
+
+class Submission(Model):
+    """One attempt sent to the banking partner. Every reference ever used is kept, because
+    a partner can execute an earlier attempt late."""
+
+    attempt: int
+    provider_reference: str
+    submitted_at: datetime
 
 
 class Transfer(Model):
@@ -154,13 +172,15 @@ class Transfer(Model):
     recipient_id: str
     quote_id: str
     client_reference: str  # untrusted: set by the merchant
+    request_idempotency_key: str | None  # untrusted: sent by the merchant when creating it
     source_amount: Decimal
     source_currency: str
     target_amount: Decimal
     target_currency: str
     rail: RailCode
     provider: Provider
-    provider_reference: str | None
+    provider_reference: str | None  # the latest submission's reference
+    submissions: list[Submission]
     status: TransferStatus
     failure_code: FailureCode | None = None
     hold_reason: HoldReason | None = None
