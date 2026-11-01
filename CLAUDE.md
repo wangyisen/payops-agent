@@ -19,7 +19,13 @@ PayOps Agent: an AI agent that investigates stuck payouts against a mock payment
 - Start each milestone or feature with a plan in `docs/plans/NN-<slug>.md`: goal, design, test plan, acceptance criteria.
 - Write tests first for domain rules (state machine, retry policy, idempotency), then implement.
 - One coherent change per PR. Conventional commit messages that say what changed and why.
+- PRs that touch money movement (retry policy, idempotency, approvals, ledger) get an independent review by a separate agent that sees only the code, not the author's conclusions.
+- Prefer invariant tests over examples where a rule can be stated as one (e.g. "a balance traced back from today never goes negative"). For core rules, mutation-check the tests: break the rule on purpose and confirm a test fails. An assertion that also holds for an empty result needs a non-empty assertion next to it.
 - When an AI mistake is worth learning from, add an entry to `docs/ai-dev-log.md`: what happened, how it was detected, the fix, and how to prevent it.
+
+## Check facts that change
+
+Model names, API parameters, prices and dependency versions change faster than an AI's training data. Look them up in current docs or the latest release (`gh api repos/<owner>/<repo>/releases/latest`) before writing them down, and confirm with a real call when one is cheap (for example, listing models). Record the source and the date next to facts that will go stale, such as prices.
 
 ## Verify before claiming done
 

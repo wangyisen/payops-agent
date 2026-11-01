@@ -1,0 +1,15 @@
+# Secret scanning rules for the CI "secrets" job: gitleaks defaults plus narrow, explicit exceptions.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented local-only key for the mock payments API; it protects nothing real."
+regexes = ['''^dev-mock-pay-key$''']
+
+[[allowlists]]
+description = "Synthetic merchant idempotency keys in mock-pay seed data: request identifiers, not secrets."
+targetRules = ["generic-api-key"]
+condition = "AND"  # this rule, in this file, on this field only; everything else is still scanned
+paths = ['''^services/mock-pay/src/mock_pay/data/transfers\.json$''']
+regexTarget = "line"
+regexes = ['''"request_idempotency_key": "ik_[0-9a-f]{16}"''']

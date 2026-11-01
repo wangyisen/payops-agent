@@ -1,0 +1,37 @@
+[
+  {
+    "merchant_id": "mer_gmnh9fvjdyse",
+    "currency": "USD",
+    "available": "202720.68",
+    "reserved": "0.00",
+    "updated_at": "2026-03-11T09:01:00Z"
+  },
+  {
+    "merchant_id": "mer_jwbv1wryn6cg",
+    "currency": "USD",
+    "available": "129609.97",
+    "reserved": "0.00",
+    "updated_at": "2026-03-11T09:05:00Z"
+  },
+  {
+    "merchant_id": "mer_g553954ss836",
+    "currency": "USD",
+    "available": "48838.58",
+    "reserved": "15800.00",
+    "updated_at": "2026-03-11T09:18:00Z"
+  },
+  {
+    "merchant_id": "mer_px55xzrce9z1",
+    "currency": "USD",
+    "available": "2420.00",
+    "reserved": "0.00",
+    "updated_at": "2026-03-11T09:22:00Z"
+  },
+  {
+    "merchant_id": "mer_vkbafc6c1rx2",
+    "currency": "USD",
+    "available": "850.00",
+    "reserved": "0.00",
+    "updated_at": "2026-03-11T09:18:00Z"
+  }
+]
