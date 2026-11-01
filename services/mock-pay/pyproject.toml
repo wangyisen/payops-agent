@@ -1,0 +1,15 @@
+[project]
+name = "mock-pay"
+version = "0.1.0"
+description = "Mock payments API with deterministic synthetic data, used as the system under investigation by PayOps Agent."
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "uvicorn[standard]>=0.32",
+]
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
