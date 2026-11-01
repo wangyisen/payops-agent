@@ -1,6 +1,7 @@
 import threading
 from datetime import datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -67,9 +68,10 @@ class TestBasics:
         assert "boom" not in response.text  # internals are not leaked
 
     def test_an_empty_key_variable_falls_back_to_the_default(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         # Copying .env.example leaves MOCK_PAY_API_KEY= empty; that must not lock everyone out.
+        monkeypatch.chdir(tmp_path)  # away from a real .env
         monkeypatch.setenv("MOCK_PAY_API_KEY", "")
 
         assert Settings().api_key.get_secret_value() == "dev-mock-pay-key"
