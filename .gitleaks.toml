@@ -1,0 +1,7 @@
+# Secret scanning rules for the CI "secrets" job: gitleaks defaults plus one explicit exception.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented local-only key for the mock payments API; it protects nothing real."
+regexes = ['''^dev-mock-pay-key$''']
