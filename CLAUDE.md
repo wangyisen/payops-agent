@@ -21,6 +21,10 @@ PayOps Agent: an AI agent that investigates stuck payouts against a mock payment
 - One coherent change per PR. Conventional commit messages that say what changed and why.
 - When an AI mistake is worth learning from, add an entry to `docs/ai-dev-log.md`: what happened, how it was detected, the fix, and how to prevent it.
 
+## Check facts that change
+
+Model names, API parameters, prices and dependency versions change faster than an AI's training data. Look them up in current docs or the latest release (`gh api repos/<owner>/<repo>/releases/latest`) before writing them down, and confirm with a real call when one is cheap (for example, listing models). Record the source and the date next to facts that will go stale, such as prices.
+
 ## Verify before claiming done
 
 Run `make check` (ruff lint and format check, mypy strict, pytest) and report the actual result. For LLM features, also run `make test-live` when a key is configured. Do not say something works without having run it.

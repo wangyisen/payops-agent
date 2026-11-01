@@ -2,7 +2,7 @@
 
 An AI agent that helps payment operations teams investigate stuck payouts — and never moves money without a human approving it.
 
-> **Status:** early development. Milestone 0 (mock payments API) and Milestone 1 (LLM basics) are in progress. See the [roadmap](#roadmap).
+> **Status:** early development. Milestone 0 (mock payments API) is done; Milestone 1 (LLM basics) is in progress. See the [roadmap](#roadmap).
 
 ## The problem
 
@@ -50,7 +50,7 @@ Each milestone ships something runnable, a plan in [`docs/plans/`](docs/plans/) 
 
 | # | Milestone | Demo | Status |
 |---|-----------|------|--------|
-| 0 | Mock payments API and synthetic scenarios | Browse transfers, partner status and webhook logs at `/docs` | 🚧 |
+| 0 | Mock payments API and synthetic scenarios ([plan](docs/plans/00-mock-pay.md)) | Browse transfers, partner status and webhook logs at `/docs` | ✅ |
 | 1 | LLM API basics: prompts, structured output, streaming, provider adapter | `payops triage` and `payops explain --stream` | 🚧 |
 | 2 | Tool calling with a hand-written agent loop | Ask why a payout is stuck; watch the tool calls | ⏳ |
 | 3 | RAG over runbooks: pgvector + BM25 hybrid search, reranking, citations | Answers cite runbook sections | ⏳ |
@@ -80,7 +80,10 @@ Requires [uv](https://docs.astral.sh/uv/) and GNU Make.
 ```bash
 make setup     # install the Python workspace
 make check     # lint, type-check and test everything
+make mock-pay  # mock payments API on http://127.0.0.1:8001 (interactive docs at /docs)
 ```
+
+The mock API's local key is `dev-mock-pay-key`; try `curl -H "Authorization: Bearer dev-mock-pay-key" "http://127.0.0.1:8001/v1/transfers?status=failed"`.
 
 ## How this project is built
 
